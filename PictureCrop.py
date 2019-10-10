@@ -1,3 +1,14 @@
+"""
+@Author : Peter Akioyamen
+@Date : October 10, 2019
+@Code : CAP 4612
+
+This python script is a part of the early stage data pipeline.
+The data are chest XRay images of varying dimensionality. This
+script reads images from local disk, formats them, and pushes
+them to a postgres database on google cloud.
+"""
+
 import os
 import glob
 import numpy as np
