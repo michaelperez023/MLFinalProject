@@ -28,7 +28,7 @@ count_images = [sum([len(image_files[image_files_keys[0]]), len(image_files[imag
                 sum([len(image_files[image_files_keys[2]]), len(image_files[image_files_keys[3]])])]
 dim = [1000, 1000]
 
-with open("train_images.pickle", "ab+") as train_f, open("test_images.pickle", "ab+") as test_f :
+with open("../train_images.pickle", "ab+") as train_f, open("../test_images.pickle", "ab+") as test_f :
     pickle.dump(count_images[0], train_f)
     pickle.dump(count_images[1], test_f)
     for key, image_category in image_files.items() :
