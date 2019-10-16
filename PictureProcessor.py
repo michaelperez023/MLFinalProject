@@ -5,10 +5,11 @@
 
 This python script is a part of the early stage data pipeline.
 The data are chest XRay images of varying dimensionality. This
-script reads images from local disk, formats them, and serializes
+script reads images from local disk, downsamples them, and serializes
 the images and their labels for storage.
 """
 
+# Import necessary libraries
 from PIL import Image
 import _pickle as pickle
 import glob
@@ -26,9 +27,9 @@ image_files = {key: glob.glob(path) for key, path in image_paths.items()}
 image_files_keys = list(image_files.keys())
 count_images = [sum([len(image_files[image_files_keys[0]]), len(image_files[image_files_keys[1]])]),
                 sum([len(image_files[image_files_keys[2]]), len(image_files[image_files_keys[3]])])]
-dim = [1000, 1000]
+dim = [750, 750]
 
-with open("../train_images.pickle", "ab+") as train_f, open("../test_images.pickle", "ab+") as test_f :
+with open("train_images.pickle", "ab+") as train_f, open("test_images.pickle", "ab+") as test_f :
     pickle.dump(count_images[0], train_f)
     pickle.dump(count_images[1], test_f)
     for key, image_category in image_files.items() :
