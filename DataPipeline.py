@@ -7,8 +7,8 @@
 import _pickle as pickle
 import numpy as np
 
-#def helper functions
 
+# def helper functions
 class DataPipeline :
     """
     A class which facilitates the functions of a data pipeline for images.
