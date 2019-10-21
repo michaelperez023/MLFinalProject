@@ -4,6 +4,8 @@
 @Code : CAP 4612
 """
 
+
+# Import libraries
 import _pickle as pickle
 import numpy as np
 
@@ -93,6 +95,11 @@ class DataPipeline :
         test_partition : int
             The partition number which is to be retrieved by this function
 
+        Returns
+        -------
+        ndarray
+            A numpy array
+
         Raises
         ------
         Exception
@@ -100,23 +107,26 @@ class DataPipeline :
                 the range of 0 and 5, inclusive
         """
 
-        # ---
+        # Define data containers and grayscale image flag
         gray_scale = 1
         test_features = []
         test_labels = []
 
-        # ---
+        # Check the partition request value
         if 0 <= test_partition <= 5 :
             partition = test_partition
         else :
-            raise Exception("batch_count must be in range [0, 5]")
+            raise Exception("arg test_partition must be in range [0, 5]")
 
-        # ---
+        # Open the training data pickle file
         try :
-            with open(self.train_path, "rb", ) as test_data :
+            with open(self.train_path, "rb") as test_data :
+                # Read the number of instances in the file, compute partition size
                 data_count = pickle.load(test_data)
                 batch_interval = data_count // 6
 
+                # Read the number of instances in a partition
+                # TODO : Simplify this statement - use multiplication on interval; use LB to continue & UB to break loop
                 for i in range(data_count):
                     instance = pickle.load(test_data)
                     if (
@@ -130,16 +140,18 @@ class DataPipeline :
                         test_labels.append(instance[0])
                         test_features.append(np.asarray(instance[1]))
         except OSError as err :
+            # Catch an OSError, notify user, exit program
             print(err.strerror)
             print("Please ensure pickle files are in correct directory.\nProgram exit.")
             quit(-1)
 
-        # ---
+        # Convert the data to numpy arrays
+        # Normalize the pixel values of the grayscale images
         test_features = np.asarray(test_features)
         test_labels = np.asarray(test_labels)
         shape = test_features.shape
         test_features /= 255.0
         test_features = np.reshape(test_features, (shape[0], shape[1], shape[2], gray_scale))
 
-        # ---
+        #
         return test_features, test_labels

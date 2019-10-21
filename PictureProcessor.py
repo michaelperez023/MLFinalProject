@@ -10,9 +10,9 @@ the images and their labels for storage.
 """
 
 
-# Define main function of script
+# Define main function
 def main() :
-    # Import necessary libraries
+    # Import libraries
     from PIL import Image
     import _pickle as pickle
     import glob
