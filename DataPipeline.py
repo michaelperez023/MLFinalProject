@@ -16,6 +16,22 @@ import numpy as np
 # Helper Functions
 # ----------------------------------------------------------------------------------------------------------------------
 def get_instance_count(file_path) :
+    """
+    Opens a pickle file specified by file_path; reads the first object which
+        should be an integer representing the number of object instances in the file.
+
+    Parameters
+    ----------
+    file_path : str
+        The path, including name, designating the location of a pickle file
+
+    Returns
+    -------
+    instance_count : int
+        The number of object instances stored in the file
+    """
+
+    # Attempt to open and read file from the given path
     try:
         with open(file_path, "rb") as train_data :
             instance_count = pickle.load(train_data)
@@ -27,10 +43,39 @@ def get_instance_count(file_path) :
 
 
 def shuffle_data(features_array, labels_array) :
+    """
+    Checks the number of instances in both arrays and randomizes the order of instances.
+
+    Parameters
+    ----------
+    features_array : ndarray
+        A numpy array containing the features of each instance
+    labels_array : ndarray
+        A numpy array containing the labels of each instance
+
+    Returns
+    -------
+    permuted_features : ndarray
+        A numpy array containing the instances' features in randomized order
+    permuted_labels : ndarray
+        A numpy array containing the instances' labels in randomized order
+
+    Raises
+    ------
+    ValueError
+        If the current iteration number specified as an argument is not within
+            the range of 0 and max_iter, inclusive
+    """
+
     # Ensure the number of instances is the same
     if features_array.shape[0] == labels_array.shape[0] :
+        # Permute the data
         permute = np.random.permutation(labels_array.shape[0])
-        return features_array[permute], labels_array[permute]
+        permuted_features = features_array[permute]
+        permuted_labels = labels_array[permute]
+
+        # Return permuted data
+        return permuted_features, permuted_labels
     else :
         raise ValueError("shape mismatch: arrays must have same number of instances")
 # ----------------------------------------------------------------------------------------------------------------------
