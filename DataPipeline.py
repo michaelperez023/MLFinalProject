@@ -80,6 +80,8 @@ def shuffle_data(features_array, labels_array) :
 # ----------------------------------------------------------------------------------------------------------------------
 
 
+# Classes
+# ----------------------------------------------------------------------------------------------------------------------
 class DataPipeline :
     """
     A class which facilitates the functions of a data pipeline for images.
@@ -319,3 +321,4 @@ class DataPipeline :
     def get_validation_data(self) :
         # TODO : Decide whether this will be necessary
         return None
+# ----------------------------------------------------------------------------------------------------------------------
