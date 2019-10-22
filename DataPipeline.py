@@ -10,7 +10,15 @@ import _pickle as pickle
 import numpy as np
 
 
-# def helper functions
+# Define helper functions
+def shuffle_data(features_array, labels_array) :
+    if len(features_array) == len(labels_array) :
+        permute = np.random.permutation(labels_array.shape[0])
+        return features_array[permute], labels_array[permute]
+    else :
+        raise ValueError("shape mismatch: arrays must be of same length")
+
+
 class DataPipeline :
     """
     A class which facilitates the functions of a data pipeline for images.
@@ -25,6 +33,8 @@ class DataPipeline :
         The path, including name, designating the location of the testing data pickle file
     train_iterations : int
         The number of training iterations necessary for one epoch
+    test_partitions : int
+        The number of partitions necessary to retrieve all test data
 
     Methods
     -------
@@ -51,6 +61,7 @@ class DataPipeline :
         self.batch_size = batch_size
         self.train_path = train_file_path
         self.test_path = test_file_path
+        self.test_partitions = 6
 
         if train_file_path is None :
             self.train_path = "train_images.pickle"
@@ -68,18 +79,31 @@ class DataPipeline :
 
         self.train_iterations = (self.train_instances // self.batch_size) + 1  # correct computation
 
-    def get_iterations(self):
+    def get_iterations(self) :
         """
         Returns the number of training iterations necessary to complete one epoch,
             this is predetermined by the batch size specified.
 
         Returns
         -------
-        self.iterations : int
+        self.train_iterations : int
             Number of training iterations necessary to complete one epoch
         """
 
         return self.train_iterations
+
+    def get_partitions(self) :
+        """
+        Returns the number of partitions necessary to retrieve all test data,
+            this is predetermined due to estimated memory constraints.
+
+        Returns
+        -------
+        self.test_partitions : int
+            Number of test data partitions necessary to retrieve all the data
+        """
+
+        return self.test_partitions
 
     def get_training_batch(self, iteration_num) :
         """ """
@@ -92,7 +116,7 @@ class DataPipeline :
         if 0 <= iteration_num <= max_iter :
             current_iter = iteration_num
         else :
-            raise Exception("arg iteration_num must be in range [0, " + str(max_iter) + "]")
+            raise ValueError("iteration_num must be in range [0, " + str(max_iter) + "]")
 
         try :
             with open(self.train_path, "rb") as train_data :
@@ -114,10 +138,13 @@ class DataPipeline :
             quit(-1)
 
         # Convert the data to numpy arrays
-        # Normalize the pixel values of the grayscale images
-        # TODO : Randomize order of data instances
+        # Randomize the order of the training data
         train_features = np.asarray(train_features)
         train_labels = np.asarray(train_labels)
+        train_features, train_labels = shuffle_data(train_features, train_labels)
+
+        # Reshape the data to instances x image dim x 1
+        # Normalize the pixel values of the grayscale images
         shape = train_features.shape
         train_features /= 255.0
         train_features = np.reshape(train_features, (shape[0], shape[1], shape[2], gray_scale))
@@ -129,13 +156,13 @@ class DataPipeline :
         # TODO : Decide whether this will be necessary
         return None
 
-    def get_test_data(self, partition_num) :
+    def get_test_data(self, current_part) :
         """
         Retrieves the test batch to be evaluated specified by the partition number provided.
 
         Parameters
         ----------
-        partition_num : int
+        current_part : int
             The partition number which is to be retrieved by this function
 
         Returns
@@ -155,15 +182,15 @@ class DataPipeline :
         # TODO : Check math on the partitioning here
         # Define data containers and grayscale image flag
         gray_scale = 1
-        max_partition = 5
+        max_partition = self.test_partitions - 1
         test_features = []
         test_labels = []
 
         # Check the partition request value
-        if 0 <= partition_num <= max_partition :
-            partition = partition_num
+        if 0 <= current_part <= max_partition :
+            partition = current_part
         else :
-            raise Exception("arg test_partition must be in range [0, 5]")
+            raise ValueError("test_partition must be in range [0, 5]")
 
         # Open the training data pickle file
         try :
@@ -189,9 +216,11 @@ class DataPipeline :
             quit(-1)
 
         # Convert the data to numpy arrays
-        # Normalize the pixel values of the grayscale images
         test_features = np.asarray(test_features)
         test_labels = np.asarray(test_labels)
+
+        # Normalize the pixel values of the grayscale images
+        # Reshape the data to instances x image dim x 1
         shape = test_features.shape
         test_features /= 255.0
         test_features = np.reshape(test_features, (shape[0], shape[1], shape[2], gray_scale))
