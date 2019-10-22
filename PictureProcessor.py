@@ -10,7 +10,7 @@ the images and their labels for storage.
 """
 
 
-# Define main function
+# Define main function of script
 def main() :
     # Import libraries
     from PIL import Image

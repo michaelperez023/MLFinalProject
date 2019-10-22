@@ -5,18 +5,35 @@
 """
 
 
-# Import libraries
+# Import standard libraries
+import warnings
 import _pickle as pickle
+
+# Import third part libraries
 import numpy as np
 
 
-# Define helper functions
+# Helper Functions
+# ----------------------------------------------------------------------------------------------------------------------
+def get_instance_count(file_path) :
+    try:
+        with open(file_path, "rb") as train_data :
+            instance_count = pickle.load(train_data)
+    except OSError as err:
+        print(err.strerror)
+        print("Please ensure pickle files are in correct directory.\nProgram exit.")
+        quit(-1)
+    return instance_count
+
+
 def shuffle_data(features_array, labels_array) :
-    if len(features_array) == len(labels_array) :
+    # Ensure the number of instances is the same
+    if features_array.shape[0] == labels_array.shape[0] :
         permute = np.random.permutation(labels_array.shape[0])
         return features_array[permute], labels_array[permute]
     else :
-        raise ValueError("shape mismatch: arrays must be of same length")
+        raise ValueError("shape mismatch: arrays must have same number of instances")
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class DataPipeline :
@@ -38,10 +55,17 @@ class DataPipeline :
 
     Methods
     -------
-    says(sound=None)
-        Prints the animals name and what sound it makes
+    get_iterations()
+        Returns the number of iterations needed to complete an epoch
+    get_partitions()
+        Returns the number of partitions needed to retrieve all test data
+    get_training_batch(iteration_num)
+        Returns a mini-batch of training data that has been randomized
+    get_test_data(partition_num)
+        Returns the subset of the test data depending on the specified partition
     """
-    def __init__(self, epochs, batch_size = 24, train_file_path = None, test_file_path = None):
+
+    def __init__(self, batch_size = 24, train_file_path = None, test_file_path = None):
         """
         The constructor for the DataPipeline class.
 
@@ -57,27 +81,24 @@ class DataPipeline :
                 if not specified, it is assumed the file is stored in the same directory as the script
         """
 
-        # TODO : Decide whether the *_instances attribute is necessary
-        self.batch_size = batch_size
         self.train_path = train_file_path
         self.test_path = test_file_path
+        self.batch_size = batch_size
         self.test_partitions = 6
 
+        # Set the location of the training and test data file to the current directory
         if train_file_path is None :
             self.train_path = "train_images.pickle"
         if test_file_path is None :
             self.test_path = "test_images.pickle"
 
-        try :
-            with open(self.train_path, "rb") as train_data, open(self.test_path, "rb") as test_data :
-                self.train_instances = pickle.load(train_data)
-                self.test_instances = pickle.load(test_data)
-        except OSError as err :
-            print(err.strerror)
-            print("Please ensure pickle files are in correct directory.\nProgram exit.")
-            quit(-1)
+        if self.batch_size <= 0 :
+            warnings.warn("batch_size cannot be <= 0, default will be set.")
+            self.batch_size = 24
+        if self.batch_size > 96 :
+            warnings.warn("batch_size larger than 96 may cause memory error.")
 
-        self.train_iterations = (self.train_instances // self.batch_size) + 1  # correct computation
+        self.train_iterations = (get_instance_count(self.train_path) // self.batch_size) + 1
 
     def get_iterations(self) :
         """
@@ -106,29 +127,56 @@ class DataPipeline :
         return self.test_partitions
 
     def get_training_batch(self, iteration_num) :
-        """ """
+        """
+        Retrieves and randomizes a mini-batch of data for training in the current iteration.
 
-        gray_scale = 1
+        Parameters
+        ----------
+        iteration_num : int
+            The current training iteration in this epoch
+
+        Returns
+        -------
+        train_features : ndarray
+            A numpy array containing the features of each training data instance within the batch
+        train_labels : ndarray
+            A numpy array containing the labels of the training data for the batch
+
+        Raises
+        ------
+        ValueError
+            If the current iteration number specified as an argument is not within
+                the range of 0 and max_iter, inclusive
+        """
+
+        # Define data containers, max number of iterations, and grayscale image flag
         max_iter = self.train_iterations - 1
         train_features = []
         train_labels = []
+        gray_scale = 1
 
+        # Check the current iteration
         if 0 <= iteration_num <= max_iter :
             current_iter = iteration_num
         else :
             raise ValueError("iteration_num must be in range [0, " + str(max_iter) + "]")
 
+        # Open the training data pickle file
         try :
             with open(self.train_path, "rb") as train_data :
+                # Read the number of instances in the file
+                # Set the training mini-batch size
                 data_count = pickle.load(train_data)
+                batch_size = self.batch_size
 
+                # Retrieve the number of training instances
                 for i in range(data_count) :
                     instance = pickle.load(train_data)
                     if (current_iter < max_iter) and \
-                            (current_iter * self.batch_size <= i < (current_iter + 1) * self.batch_size) :
+                            (current_iter * batch_size <= i < (current_iter + 1) * batch_size) :
                         train_labels.append(instance[0])
                         train_features.append(np.asarray(instance[1]))
-                    if (current_iter == max_iter) and (current_iter * self.batch_size <= i) :
+                    if (current_iter == max_iter) and (current_iter * batch_size <= i) :
                         train_labels.append(instance[0])
                         train_features.append(np.asarray(instance[1]))
         except OSError as err:
@@ -152,17 +200,13 @@ class DataPipeline :
         # Return features and labels for normalized test data
         return train_features, train_labels
 
-    def get_validation_data(self) :
-        # TODO : Decide whether this will be necessary
-        return None
-
-    def get_test_data(self, current_part) :
+    def get_test_data(self, partition_num) :
         """
-        Retrieves the test batch to be evaluated specified by the partition number provided.
+        Retrieves the test batch to be evaluated, specified by the partition number provided.
 
         Parameters
         ----------
-        current_part : int
+        partition_num : int
             The partition number which is to be retrieved by this function
 
         Returns
@@ -174,39 +218,39 @@ class DataPipeline :
 
         Raises
         ------
-        Exception
+        ValueError
             If the number of partitions specified as an argument is not within
                 the range of 0 and 5, inclusive
         """
 
-        # TODO : Check math on the partitioning here
-        # Define data containers and grayscale image flag
-        gray_scale = 1
+        # Define data containers, max number of partitions, and grayscale image flag
         max_partition = self.test_partitions - 1
         test_features = []
         test_labels = []
+        gray_scale = 1
 
         # Check the partition request value
-        if 0 <= current_part <= max_partition :
-            partition = current_part
+        if 0 <= partition_num <= max_partition :
+            current_part = partition_num
         else :
             raise ValueError("test_partition must be in range [0, 5]")
 
-        # Open the training data pickle file
+        # Open the test data pickle file
         try :
             with open(self.test_path, "rb") as test_data :
-                # Read the number of instances in the file, compute partition size
+                # Read the number of test instances contained in the file
+                # Compute partition size
                 data_count = pickle.load(test_data)
                 partition_size = data_count // (max_partition + 1)
 
                 # Read the number of instances in a partition
                 for i in range(data_count):
                     instance = pickle.load(test_data)
-                    if (partition < max_partition) and \
-                            (partition * partition_size <= i < (partition + 1) * partition_size) :
+                    if (current_part < max_partition) and \
+                            (current_part * partition_size <= i < (current_part + 1) * partition_size) :
                         test_labels.append(instance[0])
                         test_features.append(np.asarray(instance[1]))
-                    if (partition == max_partition) and (partition * partition_size <= i) :
+                    if (current_part == max_partition) and (current_part * partition_size <= i) :
                         test_labels.append(instance[0])
                         test_features.append(np.asarray(instance[1]))
         except OSError as err :
@@ -227,3 +271,7 @@ class DataPipeline :
 
         # Return features and labels for normalized test data
         return test_features, test_labels
+
+    def get_validation_data(self) :
+        # TODO : Decide whether this will be necessary
+        return None
