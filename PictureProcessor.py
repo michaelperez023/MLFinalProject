@@ -43,7 +43,7 @@ def main() :
         pickle.dump(count_images[1], test_f)
         for key, image_category in image_files.items() :
             for image in image_category :
-                with Image.open(image) as im :
+                with Image.open(image).convert("L") as im :
                     im = im.resize(dim)
                     if key == image_files_keys[0] :
                         pickle.dump([1, im], train_f)
