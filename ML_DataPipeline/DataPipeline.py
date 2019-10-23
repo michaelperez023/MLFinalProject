@@ -6,7 +6,7 @@
 # Import standard libraries
 import sys
 import warnings
-import _pickle as pickl
+import _pickle as pickle
 
 # Import third part libraries
 import numpy as np
