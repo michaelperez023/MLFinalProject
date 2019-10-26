@@ -8,7 +8,7 @@ script reads images from local disk, down-samples them, and serializes
 the images and their labels for storage.
 """
 
-
+# TODO : Save validation data separately
 # Define main function of script
 def main() :
     # Import libraries
@@ -33,6 +33,8 @@ def main() :
     image_files_keys = list(image_files.keys())
     count_images = [sum([len(image_files[image_files_keys[0]]), len(image_files[image_files_keys[1]])]),
                     sum([len(image_files[image_files_keys[2]]), len(image_files[image_files_keys[3]])])]
+
+    # Dimensions decided based on heuristics, image dimension averages, and memory constraints
     dim = [750, 750]
 
     # Save the number of test and training images
