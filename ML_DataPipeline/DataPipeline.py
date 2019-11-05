@@ -111,10 +111,6 @@ class DataPipeline:
     get_test_data(partition_num)
         Returns the subset of the test data depending on the specified partition
     """
-    # TODO : Add a method to get validation data; class @param: validation_file_path=None
-    # TODO : Add code to return standardized image data @param: model="SGD"
-    # TODO : Add code to return discrete pixel image data @param: model="Naive"
-    # TODO : Add code to return normalized image data @param: model="CNN"
     def __init__(self, model, batch_size=24, partitions=12, train_file_path=None, test_file_path=None):
         """
         The constructor for the DataPipeline class.
