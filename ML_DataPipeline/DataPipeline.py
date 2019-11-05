@@ -87,6 +87,8 @@ class DataPipeline:
 
     Attributes
     ----------
+    ml_model : str
+        The short-name of the model to be trained
     batch_size : int
         The size of the training batches
     train_path : str
@@ -113,18 +115,21 @@ class DataPipeline:
     # TODO : Add code to return standardized image data @param: model="SGD"
     # TODO : Add code to return discrete pixel image data @param: model="Naive"
     # TODO : Add code to return normalized image data @param: model="CNN"
-    def __init__(self, batch_size=24, partitions=12, train_file_path=None, test_file_path=None):
+    def __init__(self, model, batch_size=24, partitions=12, train_file_path=None, test_file_path=None):
         """
         The constructor for the DataPipeline class.
 
         Parameters
         ----------
+        model : str
+            The short-name of the model to be trained; One of "NB", "SGD", or "CNN" for
+            Naive Bayes Classifier, Stochastic Gradient Descent Classifier, or Convolution Neural Network
         batch_size : int, optional
             The size of the training batches (default is 24)
         partitions : int, optional
             The number of partitions of the test set (default is 12)
         train_file_path : str, optional
-            The path, including name, designating the location of the training data pickle file (default is None).
+            The path, including name, designating the location of the training data pickle file (default is None),
                 if not specified, it is assumed the file is stored in the same directory as the script
         test_file_path : str, optional
             The path, including name, designating the location of the testing data pickle file (default is None),
@@ -135,6 +140,12 @@ class DataPipeline:
         ValueError
             If the batch_size or partitions parameters are not integer values
         """
+
+        # Set the type of machine learning model
+        if model not in ["NB", "SGD", "CNN"]:
+            raise ValueError("model must be one of NB, SGD, or CNN")
+        else:
+            self.ml_model = model
 
         # Set the location of the training and test data file to the current directory
         if train_file_path is None:
@@ -270,14 +281,29 @@ class DataPipeline:
         train_features = np.asarray(train_features, dtype=float)
         train_labels = np.asarray(train_labels)
         train_features, train_labels = shuffle_data(train_features, train_labels)
-
-        # Reshape the data to instances x image dim x 1
-        # Normalize the pixel values of the grayscale images
         shape = train_features.shape
-        train_features /= 255.0
-        train_features = np.reshape(train_features, (shape[0], shape[1], shape[2], gray_scale))
 
-        # Return features and labels for normalized test data
+        # If model is CNN
+        if self.ml_model == "CNN" :
+            # Reshape the data to instances x image dim (mxn) x 1
+            # Normalize the pixel values of the grayscale images
+            train_features = np.reshape(train_features, (shape[0], shape[1], shape[2], gray_scale))
+            train_features /= 255.0
+        # If model is SGD
+        elif self.ml_model == "SGD":
+            # Reshape the data to instances x pixels
+            # Standardize pixel values of grayscale image
+            train_features = np.reshape(train_features, (shape[0], shape[1] * shape[2]))
+            train_mean = train_features.mean(axis=1, keepdims=True)
+            train_std = train_features.std(axis=1, keepdims=True)
+            train_features = (train_features - train_mean) / train_std
+        else:
+            # Reshape the data to instances x pixels
+            # Keep pixel values discrete
+            train_features = np.reshape(train_features, (shape[0], shape[1] * shape[2]))
+            train_features.astype(int)
+
+        # Return features and labels for the train data
         return train_features, train_labels
 
     def get_test_data(self, partition_num):
@@ -342,12 +368,27 @@ class DataPipeline:
         # Convert the data to numpy arrays
         test_features = np.asarray(test_features, dtype=float)
         test_labels = np.asarray(test_labels)
-
-        # Normalize the pixel values of the grayscale images
-        # Reshape the data to instances x image dim x 1
         shape = test_features.shape
-        test_features /= 255.0
-        test_features = np.reshape(test_features, (shape[0], shape[1], shape[2], gray_scale))
+
+        # If model is CNN
+        if self.ml_model == "CNN" :
+            # Reshape the data to instances x image dim (mxn) x 1
+            # Normalize the pixel values of the grayscale images
+            test_features = np.reshape(test_features, (shape[0], shape[1], shape[2], gray_scale))
+            test_features /= 255.0
+        # If model is SGD
+        elif self.ml_model == "SGD":
+            # Reshape the data to instances x pixels
+            # Standardize pixel values of grayscale image
+            test_features = np.reshape(test_features, (shape[0], shape[1] * shape[2]))
+            test_mean = test_features.mean(axis=1, keepdims=True)
+            test_std = test_features.std(axis=1, keepdims=True)
+            test_features = (test_features - test_mean) / test_std
+        else:
+            # Reshape the data to instances x pixels
+            # Keep pixel values discrete
+            test_features = np.reshape(test_features, (shape[0], shape[1] * shape[2]))
+            test_features.astype(int)
 
         # Return features and labels for normalized test data
         return test_features, test_labels
