@@ -8,7 +8,6 @@ script reads images from local disk, down-samples them, and serializes
 the images and their labels for storage.
 """
 
-# TODO : Save validation data separately
 # Define main function of script
 def main() :
     # Import libraries
