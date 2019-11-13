@@ -1,4 +1,4 @@
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import MultinomialNB
 from ML_DataPipeline import DataPipeline
 import _pickle as pickle
 import joblib
@@ -14,7 +14,7 @@ labels = [0, 1]
 
 
 pipeline = DataPipeline("NB", batch_size=24, train_file_path=train_path, test_file_path=test_path)
-nb = GaussianNB()
+nb =MultinomialNB(alpha=1.0)
 
 for epoch in range(epochs):
     if (epoch % 2) == 0:
@@ -30,6 +30,6 @@ for epoch in range(epochs):
             continue
         nb.partial_fit(x_train, y_train)
 
-with open("GaussianNB_" + str(epochs) + "_.pickle", "ab") as model_file:
+with open("MultinomialNB_" + str(epochs) + "_.pickle", "ab") as model_file:
     pickle.dump(nb, model_file)
 
