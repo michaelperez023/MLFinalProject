@@ -77,6 +77,7 @@ for epoch in range(epochs):
     iterations = pipeline.get_iterations()
     for iters in range(iterations):
         x_train, y_train = pipeline.get_training_batch(iters)
+        my_model.fit(x_train, y_train, epochs = 1, batch_size = 32)
         """
         if class_flag:
             svm.partial_fit(x_train, y_train, classes=labels)
