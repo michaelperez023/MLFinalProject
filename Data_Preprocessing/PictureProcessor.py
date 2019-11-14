@@ -5,7 +5,7 @@
 This python script is a part of the early stage data pipeline.
 The data are chest XRay images of varying dimensionality. This
 script reads images from local disk, down-samples them, and serializes
-the images and their labels for storage.
+the images and their labels for storage. 0 denotes pneumonia, 1 is normal.
 """
 
 # Define main function of script
