@@ -72,5 +72,5 @@ for epoch in range(epochs):
         x_train, y_train = pipeline.get_training_batch(iters)
         my_model.fit(x_train, y_train, epochs = 1, batch_size = 32)
     
-my_model.save('my_model.h5')  # creates a HDF5 file 'my_model.h5'
+my_model.save('CNNClassifier_1_.h5')  # creates a HDF5 file 'CNNClassifier_1_.h5'
     
