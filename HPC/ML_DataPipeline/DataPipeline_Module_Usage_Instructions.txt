@@ -1,0 +1,15 @@
+1. Open your IDE of preference (pycharm, spyder, Jupyter Notebook, etc.); start a new file
+
+2. Import sys and run the following: `print(sys.path)`; this provides the locations in which your python
+instance looks for packages - there will likely be one that ends or almost ends in site-packages
+
+3. Open your file explorer and go to the directory location that ends in something similar to
+*\Python\Python37-32\Lib\site-packages or *\Anaconda3\lib\site-packages
+
+4. Download and move the entire "ML_DataPipeline" directory (the directory and the files inside)
+contained in our repository to the above aforementioned folder (see step 3)
+
+5. Download the data files from the drive and place them in the folder that you are doing your
+project development in (ideally a cloned version of this repository). When you want to use the
+DataPipeline just import it as if it were a regular module using one of:
+"from ML_DataPipeline import DataPipeline", "from ML_DataPipeline import *", or "import ML_DataPipeline"

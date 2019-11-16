@@ -9,10 +9,11 @@ the images and their labels for storage. 0 denotes pneumonia, 1 is normal.
 """
 
 # Define main function of script
-def main() :
+def main():
     # Import libraries
     from PIL import Image
     import _pickle as pickle
+    import numpy as np
     import glob
     import os
 
@@ -32,6 +33,11 @@ def main() :
     image_files_keys = list(image_files.keys())
     count_images = [sum([len(image_files[image_files_keys[0]]), len(image_files[image_files_keys[1]])]),
                     sum([len(image_files[image_files_keys[2]]), len(image_files[image_files_keys[3]])])]
+    image_key_pairs = []
+    for key in image_files_keys:
+        image_files_list = [[key, file] for file in image_files[key]]
+        image_key_pairs.extend(image_files_list)
+    np.random.shuffle(image_key_pairs)
 
     # Dimensions decided based on heuristics, image dimension averages, and memory constraints
     dim = [750, 750]
@@ -39,22 +45,22 @@ def main() :
     # Save the number of test and training images
     # Open each image file, resize it, encode into binary and save it to a pickle file
     # Generate and save the labels of the images
-    with open("train_images.pickle", "ab+") as train_f, open("test_images.pickle", "ab+") as test_f :
+    with open("train_images.pickle", "ab+") as train_f, open("test_images.pickle", "ab+") as test_f:
         pickle.dump(count_images[0], train_f)
         pickle.dump(count_images[1], test_f)
-        for key, image_category in image_files.items() :
-            for image in image_category :
-                with Image.open(image).convert("L") as im :
-                    im = im.resize(dim)
-                    if key == image_files_keys[0] :
-                        pickle.dump([1, im], train_f)
-                    elif key == image_files_keys[1] :
-                        pickle.dump([0, im], train_f)
-                    elif key == image_files_keys[2] :
-                        pickle.dump([1, im], test_f)
-                    else :
-                        pickle.dump([0, im], test_f)
-                im = None
+        for pair in image_key_pairs:
+            key, image = pair
+            with Image.open(image).convert("L") as im:
+                im = im.resize(dim)
+                if key == image_files_keys[0] :
+                    pickle.dump([1, im], train_f)
+                elif key == image_files_keys[1] :
+                    pickle.dump([0, im], train_f)
+                elif key == image_files_keys[2] :
+                    pickle.dump([1, im], test_f)
+                else :
+                    pickle.dump([0, im], test_f)
+            im = None
 
         # Notify user of successful execution
         print("Success")

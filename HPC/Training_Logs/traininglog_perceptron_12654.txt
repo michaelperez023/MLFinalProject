@@ -1,0 +1,55 @@
+Sender: LSF System <phpcadmin@nxta235>
+Subject: Job 12654: <python3 PERClassifier.py> in cluster <phpc_cluster> Done
+
+Job <python3 PERClassifier.py> was submitted from host <login-florida-poly> by user <pakioyamen8647> in cluster <phpc_cluster>.
+Job was executed on host(s) <nxta235>, in queue <medium_priority>, as user <pakioyamen8647> in cluster <phpc_cluster>.
+</home/pakioyamen8647> was used as the home directory.
+</home/pakioyamen8647/MLFinalProject/HPC> was used as the working directory.
+Started at Fri Nov 15 00:17:23 2019
+Results reported at Fri Nov 15 20:33:19 2019
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python3 PERClassifier.py
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :               118002.42 sec.
+    Max Memory :             482 MB
+    Average Memory :         189.46 MB
+    Total Requested Memory : -
+    Delta Memory :           -
+    (Delta: the difference between total requested memory and actual max usage.)
+    Max Swap :               1925 MB
+
+    Max Processes :          4
+    Max Threads :            16
+
+The output (if any) follows:
+
+/bin/sh: BASH_FUNC_module(): line 0: syntax error near unexpected token `)'
+/bin/sh: BASH_FUNC_module(): line 0: `BASH_FUNC_module() () {  eval `/usr/bin/modulecmd bash $*`'
+/bin/sh: error importing function definition for `BASH_FUNC_module'
+/bin/sh: BASH_FUNC_spack(): line 0: syntax error near unexpected token `)'
+/bin/sh: BASH_FUNC_spack(): line 0: `BASH_FUNC_spack() () {  if [ -n "${ZSH_VERSION:-}" ]; then'
+/bin/sh: error importing function definition for `BASH_FUNC_spack'
+/home/pakioyamen8647/MLFinalProject/HPC/ML_DataPipeline/DataPipeline.py:174: UserWarning: arg batch_size larger than 64 may cause memory error, default will be set
+  warnings.warn("arg batch_size larger than 64 may cause memory error, default will be set")
+Perceptron
+----------
+Epoch: 1
+Epoch: 21
+Epoch: 41
+Epoch: 61
+Epoch: 81
+Epoch: 101
+Epoch: 121
+Epoch: 141
+Epoch: 161
+Epoch: 181
+Epoch: 200
