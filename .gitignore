@@ -1,0 +1,23 @@
+# Preprocessed images written by Data_Preprocessing/PictureProcessor.py (3.3 GB for the full dataset)
+train_images.pickle
+test_images.pickle
+*.pickle.tmp
+# The dataset is downloaded, not committed; data/, downloads/ and out/ are the folders of the README
+chest_xray/
+ChestXRay2017.zip
+/data/
+/downloads/
+/out/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store

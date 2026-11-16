@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # The tests use small synthetic images and never download the dataset.
+      KERAS_BACKEND: torch
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.12"
+
+      - name: Install (with the CPU build of PyTorch as the Keras backend)
+        run: |
+          uv sync --locked --extra cnn --extra plots
+          uv pip install "torch==2.14.1" --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Check the runbook
+        run: shellcheck scripts/desktop_rerun.sh
+
+      - name: Test
+        run: uv run pytest

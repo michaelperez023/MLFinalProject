@@ -1,0 +1,20 @@
+# Python 3.8 environment for the 2019 models and preprocessing (see README):
+#   - the 12 SGD models in ML_Models_Saved/ (LOG, PER and SVM) were pickled with scikit-learn
+#     0.21 and need 0.23 or older: 0.24 removed a module they refer to. The Naive Bayes model
+#     also loads in current versions.
+#   - Pillow 6 is the release line of 2019; later versions turn color JPEGs into slightly
+#     different gray levels, which would change the 2019 features
+# All of these have wheels for Python 3.8 on Linux, Intel macOS and Windows. NumPy 1.19 has
+# none for Apple Silicon, which needs an x86_64 build of Python 3.8 (Rosetta 2).
+numpy==1.19.5
+scipy==1.5.4
+scikit-learn==0.23.2
+joblib==1.4.2
+threadpoolctl==3.5.0
+Pillow==6.2.1
+pandas==1.1.5
+python-dateutil==2.9.0.post0
+pytz==2024.2
+six==1.17.0
+openpyxl==3.1.5
+et-xmlfile==2.0.0

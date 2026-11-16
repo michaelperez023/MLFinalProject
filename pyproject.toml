@@ -1,0 +1,75 @@
+[project]
+name = "project-marrow"
+version = "2026.1.0"
+description = "Pneumonia vs normal chest X-ray classification: a CAP 4612 team project from fall 2019"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Peter Akioyamen" },
+    { name = "Michael Perez" },
+    { name = "Jeffrey Krakowiak" },
+    { name = "JD3153" },
+]
+dependencies = [
+    # PyTorch's last Intel macOS wheels (2.2.2) were built against NumPy 1.x.
+    "numpy>=1.26,<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "numpy>=2; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "openpyxl>=3.1",
+    "pandas>=2.0",
+    "pillow>=10.1",
+    "scikit-learn>=1.3",
+]
+
+[project.optional-dependencies]
+# Keras 3 also needs a backend. The scripts use PyTorch unless KERAS_BACKEND says otherwise;
+# install it separately, CPU or CUDA build (see README).
+cnn = [
+    "h5py>=3.10",
+    "keras>=3.6,<4",
+]
+plots = [
+    "matplotlib>=3.8",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.17,<0.18",
+]
+
+[project.urls]
+Repository = "https://github.com/michaelperez023/MLFinalProject"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+# Editable installs (uv sync) put these folders on sys.path, so `import ML_DataPipeline`
+# and `import pneumonia_cnn` work from anywhere without copying files into site-packages.
+dev-mode-dirs = ["HPC", "CNN_Model"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["HPC/ML_DataPipeline"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# The 2019 code written by teammates keeps its original style.
+extend-exclude = ["Data_Preprocessing", "HPC", "ML_Models_Saved", "Tests_and_Demos"]
+
+[tool.ruff.per-file-target-version]
+# These also run on Python 3.8 in the environment of requirements-2019.txt
+"tests/*.py" = "py38"
+"scripts/env_info.py" = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = [
+    # The 2019 Naive Bayes model was pickled with scikit-learn 0.21.
+    "ignore:Trying to unpickle estimator:UserWarning",
+]
