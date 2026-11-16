@@ -3,7 +3,7 @@ name = "project-marrow"
 version = "2026.1.0"
 description = "Pneumonia vs normal chest X-ray classification: a CAP 4612 team project from fall 2019"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
     { name = "Peter Akioyamen" },
     { name = "Michael Perez" },
