@@ -1,3 +1,6 @@
+Note (2026): copying the package is no longer needed. `uv sync` in the repository folder makes
+ML_DataPipeline importable, or set PYTHONPATH to the HPC folder; see README.md.
+
 1. Open your IDE of preference (pycharm, spyder, Jupyter Notebook, etc.); start a new file
 
 2. Import sys and run the following: `print(sys.path)`; this provides the locations in which your python

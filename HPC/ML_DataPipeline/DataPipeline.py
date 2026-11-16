@@ -14,6 +14,25 @@ import numpy as np
 
 # Helper Functions
 # ------------------------------------------------------------------------------------------------------------------
+def missing_file_message(file_path):
+    """
+    Returns the error message for a pickle file that does not exist.
+    """
+
+    return ("pickle file not found: " + str(file_path) + "\nCreate train_images.pickle and test_images.pickle "
+            "with Data_Preprocessing/PictureProcessor.py and pass their location (see README)")
+
+
+def check_instance_count(file_path, instance_count):
+    """
+    Raises a ValueError unless instance_count, the first object of a pickle file, is a positive integer.
+    """
+
+    if not isinstance(instance_count, int) or instance_count <= 0:
+        raise ValueError(str(file_path) + " should start with the number of images, found " + repr(instance_count)
+                         + "; run PictureProcessor.py again")
+
+
 def get_instance_count(file_path):
     """
     Opens a pickle file specified by file_path; reads the first object which
@@ -28,16 +47,89 @@ def get_instance_count(file_path):
     -------
     instance_count : int
         The number of object instances stored in the file
+
+    Raises
+    ------
+    FileNotFoundError
+        If there is no file at file_path
+    ValueError
+        If the file is empty or does not start with a pickled object
     """
 
     # Attempt to open and read file from the given path
     try:
         with open(file_path, "rb") as train_data:
             instance_count = pickle.load(train_data)
-    except OSError as err:
-        print("Please ensure pickle files are in correct directory\nProgram exit")
-        raise err
+    except FileNotFoundError as err:
+        raise FileNotFoundError(missing_file_message(file_path)) from err
+    except (EOFError, pickle.UnpicklingError):
+        raise ValueError(str(file_path) + " is empty or not a file written by PictureProcessor.py") from None
     return instance_count
+
+
+def load_images(file_path):
+    """
+    Reads a pickle file written by PictureProcessor.py from start to end, once.
+
+    The file holds an integer count followed by that many [label, image] pairs,
+        where the image is a grayscale PIL image and the label is 0 (pneumonia) or 1 (normal).
+
+    Parameters
+    ----------
+    file_path : str
+        The path, including name, designating the location of a pickle file
+
+    Returns
+    -------
+    images : ndarray
+        A uint8 numpy array of shape (count, height, width) holding the pixel values
+    labels : ndarray
+        A numpy array of shape (count,) holding the labels
+
+    Raises
+    ------
+    FileNotFoundError
+        If there is no file at file_path
+    ValueError
+        If the file does not have the format written by PictureProcessor.py
+    """
+
+    try:
+        data_file = open(file_path, "rb")
+    except FileNotFoundError as err:
+        raise FileNotFoundError(missing_file_message(file_path)) from err
+
+    with data_file:
+        try:
+            data_count = pickle.load(data_file)
+        except (EOFError, pickle.UnpicklingError):
+            raise ValueError(str(file_path) + " is empty or not a file written by PictureProcessor.py") from None
+        check_instance_count(file_path, data_count)
+        images = None
+        labels = np.empty(data_count, dtype=np.int64)
+        for i in range(data_count):
+            try:
+                label, image = pickle.load(data_file)
+            except (EOFError, pickle.UnpicklingError):
+                raise ValueError(str(file_path) + " is incomplete: it holds " + str(i) + " of the " + str(data_count)
+                                 + " images its first entry announces; run PictureProcessor.py again") from None
+            pixels = np.asarray(image)
+            if images is None:
+                if pixels.ndim != 2 or pixels.dtype != np.uint8:
+                    raise ValueError(str(file_path) + " should hold 8-bit grayscale images, found an array of shape "
+                                     + str(pixels.shape) + " and type " + str(pixels.dtype))
+                images = np.empty((data_count,) + pixels.shape, dtype=np.uint8)
+            if pixels.shape != images.shape[1:]:
+                raise ValueError("image " + str(i) + " in " + str(file_path) + " has shape " + str(pixels.shape)
+                                 + ", the first image has shape " + str(images.shape[1:]))
+            images[i] = pixels
+            labels[i] = label
+        if data_file.read(1):
+            # The 2019 version of PictureProcessor.py opened its output files in append mode,
+            # so running it twice stacked two datasets in one file
+            raise ValueError(str(file_path) + " has more data after its " + str(data_count) + " images; it was "
+                             "probably written twice. Delete it and run PictureProcessor.py again")
+    return images, labels
 
 
 def shuffle_data(features_array, labels_array):
@@ -61,8 +153,7 @@ def shuffle_data(features_array, labels_array):
     Raises
     ------
     ValueError
-        If the current iteration number specified as an argument is not within
-            the range of 0 and max_iter, inclusive
+        If the two arrays do not hold the same number of instances
     """
 
     # Ensure the number of instances is the same
@@ -85,6 +176,10 @@ class DataPipeline:
     """
     A class which facilitates the functions of a data pipeline for images.
 
+    Each pickle file is read once, the first time its data are requested, and kept in memory
+        as 8-bit pixels (about 2.9 GB for the 5,232 training images at 750x750, 0.35 GB for the 624 test images).
+        Until 2026 every request re-read the file from its start.
+
     Attributes
     ----------
     ml_model : str
@@ -99,6 +194,10 @@ class DataPipeline:
         The number of training iterations necessary for one epoch
     partition_count : int
         The number of partitions necessary to retrieve all test data
+    train_data : tuple of ndarray or None
+        The training images and labels, once read
+    test_data : tuple of ndarray or None
+        The test images and labels, once read
 
     Methods
     -------
@@ -134,7 +233,10 @@ class DataPipeline:
         Raises
         ------
         ValueError
-            If the batch_size or partitions parameters are not integer values
+            If the batch_size or partitions parameters are not integer values, or if the training data pickle
+                file does not start with a positive image count or holds fewer images than one batch
+        FileNotFoundError
+            If there is no training data pickle file at train_file_path
         """
 
         # Set the type of machine learning model
@@ -167,7 +269,7 @@ class DataPipeline:
 
         # Check the bounds on the set batch size
         if self.batch_size <= 0:
-            warnings.warn("arg batch_size cannot be less than 0, default will be set")
+            warnings.warn("arg batch_size must be larger than 0, default will be set")
             sys.stderr.flush()
             self.batch_size = 24
         if self.batch_size > 64:
@@ -177,7 +279,7 @@ class DataPipeline:
 
         # Check the bounds on the set partition number
         if self.partition_count <= 8:
-            warnings.warn("arg partitions less than 8 may cause memory error, default will be set")
+            warnings.warn("arg partitions of 8 or fewer may cause memory error, default will be set")
             sys.stderr.flush()
             self.partition_count = 12
         if self.partition_count > 16:
@@ -185,7 +287,17 @@ class DataPipeline:
             sys.stderr.flush()
 
         # Set the number of iterations necessary to complete one epoch
-        self.train_iterations = get_instance_count(self.train_path) // self.batch_size
+        # Without a full batch there would be no iterations, and the training scripts would save untrained models
+        train_count = get_instance_count(self.train_path)
+        check_instance_count(self.train_path, train_count)
+        if train_count < self.batch_size:
+            raise ValueError(str(self.train_path) + " holds " + str(train_count) + " images, fewer than one batch of "
+                             + str(self.batch_size))
+        self.train_iterations = train_count // self.batch_size
+
+        # The images are read from disk the first time they are needed, then kept in memory
+        self.train_data = None
+        self.test_data = None
 
     def get_iterations(self):
         """
@@ -236,10 +348,8 @@ class DataPipeline:
                 the range of 0 and max_iter, inclusive
         """
 
-        # Define data containers, max number of iterations, and grayscale image flag
+        # Define max number of iterations and grayscale image flag
         max_iter = self.train_iterations - 1
-        train_features = []
-        train_labels = []
         gray_scale = 1
 
         # Check the current iteration
@@ -248,31 +358,18 @@ class DataPipeline:
         else:
             raise ValueError("iteration_num must be in range [0, " + str(max_iter) + "]")
 
-        # Open the training data pickle file
-        try:
-            with open(self.train_path, "rb") as train_data:
-                # Read the number of instances in the file
-                # Set the training mini-batch size
-                data_count = pickle.load(train_data)
-                batch_size = self.batch_size
+        # Read the training data pickle file on the first request
+        if self.train_data is None:
+            self.train_data = load_images(self.train_path)
+        images, labels = self.train_data
 
-                # Retrieve the number of training instances
-                for i in range(data_count):
-                    instance = pickle.load(train_data)
-                    if (current_iter < max_iter) and \
-                            (current_iter * batch_size <= i < (current_iter + 1) * batch_size):
-                        train_labels.append(instance[0])
-                        train_features.append(np.asarray(instance[1]))
-                    if (current_iter == max_iter) and (current_iter * batch_size <= i):
-                        train_labels.append(instance[0])
-                        train_features.append(np.asarray(instance[1]))
-                    if current_iter != max_iter and len(train_labels) == batch_size: break
-        except OSError as err:
-            # Catch OSError, notify user, exit program
-            print("Ensure pickle files are in correct directory\nProgram exit")
-            raise err
+        # Select the mini-batch; the last iteration of an epoch also takes the remaining instances
+        start = current_iter * self.batch_size
+        stop = start + self.batch_size if current_iter < max_iter else len(labels)
+        train_features = images[start:stop]
+        train_labels = labels[start:stop]
 
-        # Convert the data to numpy arrays
+        # Convert the data to floating point numpy arrays
         # Randomize the order of the training data
         train_features = np.asarray(train_features, dtype=float)
         train_labels = np.asarray(train_labels)
@@ -295,9 +392,8 @@ class DataPipeline:
             train_features = (train_features - train_mean) / train_std
         else:
             # Reshape the data to instances x pixels
-            # Keep pixel values discrete
+            # Keep pixel values discrete: whole numbers from 0 to 255
             train_features = np.reshape(train_features, (shape[0], shape[1] * shape[2]))
-            train_features.astype(int)
 
         # Return features and labels for the train data
         return train_features, train_labels
@@ -321,47 +417,33 @@ class DataPipeline:
         Raises
         ------
         ValueError
-            If the number of partitions specified as an argument is not within
-                the range of 0 and 5, inclusive
+            If the partition number specified as an argument is not within
+                the range of 0 and the number of partitions - 1, inclusive
         """
 
-        # Define data containers, max number of partitions, and grayscale image flag
+        # Define max number of partitions and grayscale image flag
         max_partition = self.partition_count - 1
-        test_features = []
-        test_labels = []
         gray_scale = 1
 
         # Check the partition request value
         if 0 <= partition_num <= max_partition:
             current_part = partition_num
         else:
-            raise ValueError("test_partition must be in range [0, 5]")
+            raise ValueError("partition_num must be in range [0, " + str(max_partition) + "]")
 
-        # Open the test data pickle file
-        try:
-            with open(self.test_path, "rb") as test_data:
-                # Read the number of test instances contained in the file
-                # Compute partition size
-                data_count = pickle.load(test_data)
-                partition_size = data_count // (max_partition + 1)
+        # Read the test data pickle file on the first request
+        if self.test_data is None:
+            self.test_data = load_images(self.test_path)
+        images, labels = self.test_data
 
-                # Read the number of instances in a partition
-                for i in range(data_count):
-                    instance = pickle.load(test_data)
-                    if (current_part < max_partition) and \
-                            (current_part * partition_size <= i < (current_part + 1) * partition_size):
-                        test_labels.append(instance[0])
-                        test_features.append(np.asarray(instance[1]))
-                    if (current_part == max_partition) and (current_part * partition_size <= i):
-                        test_labels.append(instance[0])
-                        test_features.append(np.asarray(instance[1]))
-                    if current_part != max_partition and len(test_labels) == partition_size: break
-        except OSError as err:
-            # Catch OSError, notify user, exit program
-            print("Ensure pickle files are in correct directory\nProgram exit")
-            raise err
+        # Compute partition size and select the partition; the last partition also takes the remaining instances
+        partition_size = len(labels) // (max_partition + 1)
+        start = current_part * partition_size
+        stop = start + partition_size if current_part < max_partition else len(labels)
+        test_features = images[start:stop]
+        test_labels = labels[start:stop]
 
-        # Convert the data to numpy arrays
+        # Convert the data to floating point numpy arrays
         test_features = np.asarray(test_features, dtype=float)
         test_labels = np.asarray(test_labels)
         shape = test_features.shape
@@ -382,9 +464,8 @@ class DataPipeline:
             test_features = (test_features - test_mean) / test_std
         else:
             # Reshape the data to instances x pixels
-            # Keep pixel values discrete
+            # Keep pixel values discrete: whole numbers from 0 to 255
             test_features = np.reshape(test_features, (shape[0], shape[1] * shape[2]))
-            test_features.astype(int)
 
         # Return features and labels for normalized test data
         return test_features, test_labels
