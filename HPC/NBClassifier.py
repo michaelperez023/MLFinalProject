@@ -11,12 +11,20 @@ classification models which use mini-batch training.
 from sklearn.naive_bayes import MultinomialNB
 from ML_DataPipeline import DataPipeline
 import _pickle as pickle
+import argparse
+import os
 
+parser = argparse.ArgumentParser(description="Train the multinomial Naive Bayes model with one pass over the data.")
+parser.add_argument("--data-dir", default=".", help="folder with train_images.pickle (default: current folder)")
+parser.add_argument("--out-dir", default=".", help="folder for NBClassifier_1.pickle (default: current folder)")
+args = parser.parse_args()
+os.makedirs(args.out_dir, exist_ok=True)
 
 class_flag = True
 labels = [0, 1]
 
-pipeline = DataPipeline("NB", batch_size=24)
+pipeline = DataPipeline("NB", batch_size=24, train_file_path=os.path.join(args.data_dir, "train_images.pickle"),
+                        test_file_path=os.path.join(args.data_dir, "test_images.pickle"))
 nb = MultinomialNB()
 
 print("Multinomial Naive Bayes")
@@ -30,6 +38,5 @@ for iters in range(iterations):
         continue
     nb.partial_fit(x_train, y_train)
 
-with open("NBClassifier_1.pickle", "ab") as model_file:
+with open(os.path.join(args.out_dir, "NBClassifier_1.pickle"), "wb") as model_file:
     pickle.dump(nb, model_file)
-

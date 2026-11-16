@@ -11,14 +11,26 @@ learning algorithm, enabling mini-batch training.
 from ML_DataPipeline import DataPipeline
 from sklearn.linear_model import SGDClassifier
 import _pickle as pickle
+import argparse
+import os
+
+parser = argparse.ArgumentParser(description="Train the perceptron (SGDClassifier with perceptron loss)"
+                                             " for --epochs passes over the training data.")
+parser.add_argument("--data-dir", default=".", help="folder with train_images.pickle (default: current folder)")
+parser.add_argument("--out-dir", default=".", help="folder for the saved models (default: current folder)")
+parser.add_argument("--epochs", type=int, default=200, help="passes over the training data (default: 200)")
+args = parser.parse_args()
+os.makedirs(args.out_dir, exist_ok=True)
 
 labels = [0, 1]
-epochs = 200
+epochs = args.epochs
 seed = 42
 
-pipeline = DataPipeline("SGD", batch_size=96)
+# The 2019 runs asked for batch_size=96, which DataPipeline replaces with its default of 24
+# (see the warning in Training_Logs), so the saved models were trained with batches of 24
+pipeline = DataPipeline("SGD", batch_size=24, train_file_path=os.path.join(args.data_dir, "train_images.pickle"),
+                        test_file_path=os.path.join(args.data_dir, "test_images.pickle"))
 
-class_flag = True
 print("Perceptron")
 print("----------")
 per = SGDClassifier(loss="perceptron", verbose=0, random_state=seed)
@@ -39,14 +51,14 @@ for epoch in range(epochs):
         per.partial_fit(x_train, y_train)
 
     if epoch == 0:
-        with open("PERClassifier_" + str(epoch+1) + ".pickle", "ab") as model_file:
+        with open(os.path.join(args.out_dir, "PERClassifier_" + str(epoch+1) + ".pickle"), "wb") as model_file:
             pickle.dump(per, model_file)
     if epoch == 49:
-        with open("PERClassifier_" + str(epoch+1) + ".pickle", "ab") as model_file:
+        with open(os.path.join(args.out_dir, "PERClassifier_" + str(epoch+1) + ".pickle"), "wb") as model_file:
             pickle.dump(per, model_file)
     if epoch == 99:
-        with open("PERClassifier_" + str(epoch+1) + ".pickle", "ab") as model_file:
+        with open(os.path.join(args.out_dir, "PERClassifier_" + str(epoch+1) + ".pickle"), "wb") as model_file:
             pickle.dump(per, model_file)
     if epoch == (epochs - 1):
-        with open("PERClassifier_" + str(epochs) + ".pickle", "ab") as model_file:
+        with open(os.path.join(args.out_dir, "PERClassifier_" + str(epochs) + ".pickle"), "wb") as model_file:
             pickle.dump(per, model_file)
